@@ -2,36 +2,14 @@ import sys
 import unittest
 
 class ValidationTests(unittest.TestCase):
-    def test_basic(self):
-        self.assertTrue(True)
-    
     def test_parse(self):
         parsed = parse('2-8 t: pncmjxlvckfbtrjh')
         self.assertTupleEqual(parsed, (2,8,'t','pncmjxlvckfbtrjh'))
 
-    def test_is_valid_min_char(self):
-        self.assertTrue(valid_min(2, 't', 'tt'))
-
-    def test_is_not_valid_if_not_min_char(self):
-        self.assertFalse(valid_min(2, 't', 'xxxxx'))
-        self.assertFalse(valid_min(2, 't', 'xxxxxt'))
-        self.assertFalse(valid_min(2, 't', ''))
-
-    def test_is_valid_max(self):
-        self.assertTrue(valid_max(8, 't', 'tt'))
-        self.assertTrue(valid_max(8, 't', 't' * 8))
-        self.assertTrue(valid_max(0, 't', 'xx'))
-        self.assertTrue(valid_max(0, 't', ''))
-
-    def test_is_not_valid_max(self):
-        self.assertFalse(valid_max(8, 't', 't' * 9))
-
     def test_is_valid(self):
-        self.assertTrue(is_valid('6-10 h: hhnhhhhxhkh'))
-        self.assertFalse(is_valid('1-3 h: aaaaaaaaaa'))
-        self.assertFalse(is_valid('1-3 h: '))
-        self.assertFalse(is_valid('6-10 h: hhhhhhhhhhhhhhhnhhhhxhkh'))
-
+        self.assertTrue(is_valid('1-3 a: abcde'))
+        self.assertFalse(is_valid('1-3 b: cdefg'))
+        self.assertFalse(is_valid('2-9 c: ccccccccc'))
 
 def parse(line):
     policy, password = line.split(': ')
@@ -39,21 +17,14 @@ def parse(line):
     min,max = range.split('-')
     return (int(min),int(max),char,password)
 
-def valid_min(min, char, password):
-    return password.count(char) >= min
-
-def valid_max(max, char, password):
-    return password.count(char) <= max
-
 def is_valid(line):
     min, max, char, password = parse(line)
-    return valid_min(min, char, password) & valid_max(max, char, password)
+    return None
 
 def main():
     with open('../_data/day2.txt', 'r',newline='', encoding='utf-8') as f:
-        valid_lines = [1 for line in f if is_valid(line)]
-        print(len(valid_lines))
+        print(len([1 for line in f if is_valid(line)]))
 
 if __name__ == '__main__':
-    #unittest.main()
+    unittest.main()
     sys.exit(main())
