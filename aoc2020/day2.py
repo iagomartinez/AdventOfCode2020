@@ -26,6 +26,12 @@ class ValidationTests(unittest.TestCase):
     def test_is_not_valid_max(self):
         self.assertFalse(valid_max(8, 't', 't' * 9))
 
+    def test_is_valid(self):
+        self.assertTrue(is_valid('6-10 h: hhnhhhhxhkh'))
+        self.assertFalse(is_valid('1-3 h: aaaaaaaaaa'))
+        self.assertFalse(is_valid('1-3 h: '))
+        self.assertFalse(is_valid('6-10 h: hhhhhhhhhhhhhhhnhhhhxhkh'))
+
 
 def parse(line):
     policy, password = line.split(': ')
@@ -39,14 +45,15 @@ def valid_min(min, char, password):
 def valid_max(max, char, password):
     return password.count(char) <= max
 
-def is_valid(min, max, char, password):
-    return valid_min(min, char, password)
+def is_valid(line):
+    min, max, char, password = parse(line)
+    return valid_min(min, char, password) & valid_max(max, char, password)
 
 def main():
     with open('../_data/day2.txt', 'r',newline='', encoding='utf-8') as f:
-        for line in f:
-            print(line, end='')
+        valid_lines = [1 for line in f if is_valid(line)]
+        print(len(valid_lines))
 
 if __name__ == '__main__':
-    unittest.main()
+    #unittest.main()
     sys.exit(main())
