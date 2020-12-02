@@ -10,21 +10,22 @@ class ValidationTests(unittest.TestCase):
         self.assertTrue(is_valid('1-3 a: abcde'))
         self.assertFalse(is_valid('1-3 b: cdefg'))
         self.assertFalse(is_valid('2-9 c: ccccccccc'))
+        self.assertTrue(is_valid('1-3 b: bbebbb'))
 
 def parse(line):
     policy, password = line.split(': ')
     range, char = policy.split(' ')
-    min,max = range.split('-')
-    return (int(min),int(max),char,password)
+    pos1,pos2 = range.split('-')
+    return (int(pos1),int(pos2),char,password)
 
 def is_valid(line):
-    min, max, char, password = parse(line)
-    return None
+    pos1, pos2, char, password = parse(line)
+    return (password[pos1-1] == char) ^ (password[pos2-1] == char)
 
 def main():
     with open('../_data/day2.txt', 'r',newline='', encoding='utf-8') as f:
         print(len([1 for line in f if is_valid(line)]))
 
 if __name__ == '__main__':
-    unittest.main()
+    #unittest.main()
     sys.exit(main())
