@@ -12,14 +12,18 @@ class Day4Tests(unittest.TestCase):
         self.assertEqual(expected, passports[0])
         self.assertTrue('hgt' not in passports[1])
         self.assertTrue('cid' not in passports[2])
-        self.assertTrue(all (k not in passports[3] for k in ('cid','byr')))
+        self.assertTrue(all(k not in passports[3] for k in ('cid','byr')))
 
     def test_validate(self):
         passports = parse_passports('../_data/day4_sample.txt')
         self.assertTrue(valid(passports[0]))
+        self.assertFalse(valid(passports[1]))
+        self.assertTrue(valid(passports[2]))
+        self.assertFalse(valid(passports[3]))
 
 def valid(passport):
-    return all (k in passport for k in ('ecl','pid','eyr','hcl','byr','iyr','hgt'))
+    is_valid = all(k in passport for k in {'ecl','pid','eyr','hcl','byr','iyr','hgt'})
+    return is_valid
 
 def parse_passports(filename):
     with open(filename, 'r', newline='', encoding='utf-8') as f:
@@ -40,7 +44,8 @@ def parse_passports(filename):
     return passports
 
 def main():
-    print('main')
+    print(len([p for p in parse_passports('../_data/day4.txt') if valid(p)]))
+    #print('main')
 
 if __name__ == '__main__':
     unittest.main()
