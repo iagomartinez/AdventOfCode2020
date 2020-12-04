@@ -77,25 +77,19 @@ class Day4Tests(unittest.TestCase):
         self.assertTrue(valid_pid('000000001'))
         self.assertFalse(valid_pid('0123456789'))
 
-def valid_pid(pid, verbose=False):
+def valid_pid(pid):
     is_valid = pid.isnumeric() and len(pid) == 9
-    if verbose:
-        print(f'pid:{pid} {is_valid}')
     return is_valid
 
-def valid_ecl(ecl, verbose=False):
+def valid_ecl(ecl):
     is_valid = ecl in {'amb','blu','brn','gry','grn','hzl','oth'}
-    if verbose:
-        print(f'ecl:{ecl} {is_valid}')
     return is_valid
 
-def valid_hcl(hcl, verbose=False):
+def valid_hcl(hcl):
     is_valid = re.match('#[0-9a-f]{6}', hcl) is not None
-    if verbose:
-        print(f'hcl:{hcl} {is_valid}')
     return is_valid
         
-def valid_hgt(hgt, verbose=False):
+def valid_hgt(hgt):
     is_valid = False
     if 'in' in hgt:
         num = int(hgt.strip('in'))
@@ -103,45 +97,49 @@ def valid_hgt(hgt, verbose=False):
     if 'cm' in hgt:
         num = int(hgt.strip('cm'))
         is_valid = num >= 150 and num <= 193
-    if verbose:
-        print(f'hgt {hgt}: {is_valid}')
     return is_valid
 
-def in_range(date, min, max, verbose=False):
+def in_range(date, min, max):
     year = int(date)
     is_valid = year >= min and year <= max
-    if verbose:
-        print(f'{date}: {is_valid}')
     return is_valid
 
-def valid_eyr(eyr, verbose=False):    
-    return in_range(eyr, 2020, 2030, verbose)
+def valid_eyr(eyr):    
+    return in_range(eyr, 2020, 2030)
 
-def valid_iyr(iyr, verbose=False):    
-    return in_range(iyr, 2010, 2020, verbose)
+def valid_iyr(iyr):    
+    return in_range(iyr, 2010, 2020)
 
-def valid_byr(byr, verbose=False):
-    return in_range(byr, 1920, 2002, verbose)
+def valid_byr(byr):
+    return in_range(byr, 1920, 2002)
 
 def diff_fields(required, passport):
     given = set(passport.keys())
     diff = given.difference(required).union(required.difference(given))
     return diff
 
-def validpassport(passport, verbose=False):
+def valid_fields(passport):
     required = {'ecl','pid','eyr','hcl','byr','iyr','hgt'}
     has_required = all(k in passport for k in required)
     diff = diff_fields(required, passport)
-    if verbose:
-        print(f'{has_required}, fields diff: {diff}')
-    if not(has_required):
+    return has_required, diff
+
+def validpassport(passport, verbose=False):
+    has_required, diff = valid_fields(passport)
+    if not has_required:
+        if verbose:
+            print(f'Invalid fields! exceptions:{diff}')
         return False
+
+    validate_map = {'byr': valid_byr, 'eyr': valid_eyr, 'iyr': valid_iyr, 'hgt': valid_hgt, 'hcl': valid_hcl, 'ecl': valid_ecl, 'pid':valid_pid}    
+    tests = {f'{k}:{passport[k]}': fn(passport[k]) for k, fn in validate_map.items()}
     
-    byr,eyr,iyr = valid_byr(passport['byr'],False), valid_eyr(passport['eyr'], False), valid_iyr(passport['iyr'], False)
-    hgt,hcl,ecl = valid_hgt(passport['hgt'], False), valid_hcl(passport['hcl'], False), valid_ecl(passport['ecl'], False)
-    pid = valid_pid(passport['pid'], True)
-    
-    return has_required and byr and eyr and iyr and hgt and hcl and ecl and pid
+    is_valid = has_required and all(tests.values())
+
+    if verbose:
+        print(f'Valid: {is_valid}, {tests}')
+
+    return is_valid 
 
 def parse(filename):
     with open(filename, 'r', newline='', encoding='utf-8') as f:
@@ -165,5 +163,5 @@ def main():
     print(len([p for p in parse('../_data/day4.txt') if validpassport(p, verbose=True)]))
 
 if __name__ == '__main__':
-    unittest.main()
-    #sys.exit(main())
+    #unittest.main()
+    sys.exit(main())
