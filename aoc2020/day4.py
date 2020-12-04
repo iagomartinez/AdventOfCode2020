@@ -22,7 +22,11 @@ class Day4Tests(unittest.TestCase):
         self.assertFalse(valid(passports[3]))
 
 def valid(passport):
-    is_valid = all(k in passport for k in {'ecl','pid','eyr','hcl','byr','iyr','hgt'})
+    required = {'ecl','pid','eyr','hcl','byr','iyr','hgt'}
+    is_valid = all(k in passport for k in required)
+    given = set(passport.keys())
+    diff = given.difference(required).union(required.difference(given))
+    print(f'{is_valid}, fields diff: {diff}')
     return is_valid
 
 def parse_passports(filename):
@@ -45,8 +49,7 @@ def parse_passports(filename):
 
 def main():
     print(len([p for p in parse_passports('../_data/day4.txt') if valid(p)]))
-    #print('main')
 
 if __name__ == '__main__':
-    unittest.main()
-    #sys.exit(main())
+    #unittest.main()
+    sys.exit(main())
