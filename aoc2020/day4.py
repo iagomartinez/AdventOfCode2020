@@ -4,11 +4,11 @@ import re
 
 class Day4Tests(unittest.TestCase):
     def test_loadfile(self):
-        passports = parse_passports('../_data/day4_sample.txt')
+        passports = parse('../_data/day4_sample.txt')
         self.assertEqual(len(passports), 4)
     
     def test_passportdata(self):
-        passports = parse_passports('../_data/day4_sample.txt')
+        passports = parse('../_data/day4_sample.txt')
         expected = {'ecl':'gry', 'pid':'860033327', 'eyr':'2020', 'hcl':'#fffffd', 'byr':'1937', 'iyr':'2017', 'cid':'147', 'hgt':'183cm'}
         self.assertEqual(expected, passports[0])
         self.assertTrue('hgt' not in passports[1])
@@ -16,21 +16,21 @@ class Day4Tests(unittest.TestCase):
         self.assertTrue(all(k not in passports[3] for k in ('cid','byr')))
 
     def test_validate(self):
-        passports = parse_passports('../_data/day4_sample.txt')
-        self.assertTrue(valid(passports[0]))
-        self.assertFalse(valid(passports[1]))
-        self.assertTrue(valid(passports[2]))
-        self.assertFalse(valid(passports[3]))
+        passports = parse('../_data/day4_sample.txt')
+        self.assertTrue(validpassport(passports[0]))
+        self.assertFalse(validpassport(passports[1]))
+        self.assertTrue(validpassport(passports[2]))
+        self.assertFalse(validpassport(passports[3]))
     
     def test_strict_invalidpassports(self):
-        passports = parse_passports('../_data/day4pt2_invalid.txt')
+        passports = parse('../_data/day4pt2_invalid.txt')
         for p in passports:
-            self.assertFalse(valid(p, True))
+            self.assertFalse(validpassport(p, True))
 
     def test_strict_validpassports(self):
-        passports = parse_passports('../_data/day4pt2_valid.txt')
+        passports = parse('../_data/day4pt2_valid.txt')
         for p in passports:
-            self.assertTrue(valid(p, True))
+            self.assertTrue(validpassport(p, True))
 
     def test_byr(self):
         self.assertTrue(valid_byr('2002'))
@@ -72,12 +72,22 @@ class Day4Tests(unittest.TestCase):
         self.assertTrue(valid_ecl('amb'))
         self.assertFalse(valid_ecl(''))
         self.assertFalse(valid_ecl('xxx'))
+    
+    def test_pid(self):
+        self.assertTrue(valid_pid('000000001'))
+        self.assertFalse(valid_pid('0123456789'))
 
+def valid_pid(pid, verbose=False):
+    is_valid = pid.isnumeric() and len(pid) == 9
+    if verbose:
+        print(f'pid:{pid} {is_valid}')
+    return is_valid
 
 def valid_ecl(ecl, verbose=False):
     is_valid = ecl in {'amb','blu','brn','gry','grn','hzl','oth'}
     if verbose:
         print(f'ecl:{ecl} {is_valid}')
+    return is_valid
 
 def valid_hcl(hcl, verbose=False):
     is_valid = re.match('#[0-9a-f]{6}', hcl) is not None
@@ -118,7 +128,7 @@ def diff_fields(required, passport):
     diff = given.difference(required).union(required.difference(given))
     return diff
 
-def valid(passport, verbose=False):
+def validpassport(passport, verbose=False):
     required = {'ecl','pid','eyr','hcl','byr','iyr','hgt'}
     has_required = all(k in passport for k in required)
     diff = diff_fields(required, passport)
@@ -128,11 +138,12 @@ def valid(passport, verbose=False):
         return False
     
     byr,eyr,iyr = valid_byr(passport['byr'],False), valid_eyr(passport['eyr'], False), valid_iyr(passport['iyr'], False)
-    hgt, hcl, ecl = valid_hgt(passport['hgt'], False), valid_hcl(passport['hcl'], verbose), valid_ecl(passport['ecl'], verbose)
+    hgt,hcl,ecl = valid_hgt(passport['hgt'], False), valid_hcl(passport['hcl'], False), valid_ecl(passport['ecl'], False)
+    pid = valid_pid(passport['pid'], True)
     
-    return has_required and byr and eyr and iyr and hgt and hcl
+    return has_required and byr and eyr and iyr and hgt and hcl and ecl and pid
 
-def parse_passports(filename):
+def parse(filename):
     with open(filename, 'r', newline='', encoding='utf-8') as f:
         passports = []
         new_pass = dict()
@@ -151,7 +162,7 @@ def parse_passports(filename):
     return passports
 
 def main():
-    print(len([p for p in parse_passports('../_data/day4.txt') if valid(p, verbose=True)]))
+    print(len([p for p in parse('../_data/day4.txt') if validpassport(p, verbose=True)]))
 
 if __name__ == '__main__':
     unittest.main()
