@@ -25,7 +25,11 @@ class Day5Tests(unittest.TestCase):
         colcode = colcode.replace('R','1').replace('L','0')
         self.assertEqual('101', colcode)
 
-def decode(seatcode):
+    def test_max(self):
+        seatids = calculate('../_data/day5.txt')
+        self.assertEqual(980, max(seatids))
+
+def decode(seatcode, verbose=False):
     rowcode = seatcode[0:7]
     rowcode = rowcode.replace('F', '0').replace('B', '1')
     rowcode = int(rowcode, 2)
@@ -33,10 +37,32 @@ def decode(seatcode):
     colcode = colcode.replace('R','1').replace('L','0')
     colcode = int(colcode, 2)
 
-    return rowcode, colcode, (rowcode * 8) + colcode
+    seatid = (rowcode * 8) + colcode
+    if verbose:
+        print(f'{seatcode}-># r:{rowcode}, c:{colcode}, id:{seatid}')
 
-def main():
-    print('Day 5')
+    return rowcode, colcode, seatid
+
+def calculate(datafile, verbose=False):
+    seatids = []
+    with open('../_data/day5.txt', 'r', newline='', encoding='utf-8') as f:
+        for line in f:
+            code = line.rstrip()
+            _, _,id = decode(code, verbose)
+            seatids.append(id)
+    return seatids
+
+def main():    
+    seatids = calculate('../_data/day5.txt', True)
+    print(max(seatids))
+
+    seatids.sort()
+    front = seatids[0:len(seatids)-1]
+    back = seatids[1:len(seatids)]
+    for seat1, seat2 in zip(front, back):
+        if seat2 != seat1 + 1:
+            print(f'missing seat is {seat1 + 1}')
+            break
 
 if __name__ == '__main__':
     sys.exit(main())
