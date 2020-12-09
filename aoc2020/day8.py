@@ -16,8 +16,7 @@ class AOCTests(unittest.TestCase):
         for acc in rt.next():
             print(acc)
         self.assertEqual(42, rt.acc)
-        self.assertEqual([('nop', 0), ('acc', 99), ('jmp', 2), ('acc', -57)], rt.stack)
-
+        self.assertEqual([(0, 'nop', 0), (1, 'acc', 99), (2, 'jmp', 2), (4, 'acc', -57)], rt.stack)
 
 class BootCodeRunTime():
     def __init__(self, program, verbose=False):
@@ -26,26 +25,26 @@ class BootCodeRunTime():
         self.stack = []
         self.pointer = 0
         self.v = verbose
-        self.map = {'nop':self.__nop, 'acc': self.__acc, 'jmp': self.__jmp}
+        self.symbol = {'nop':self.__nop, 'acc': self.__acc, 'jmp': self.__jmp}
 
     def __nop(self, arg):
-        self.pointer += 1
-        return None
+        return 1
     
     def __acc(self, arg):
         self.acc += arg
-        self.pointer += 1
+        return 1
 
     def __jmp(self, arg):
-        self.pointer += arg
+        return arg
 
     def next(self):
         while self.pointer < len(self.program):
             cmd, arg = self.program[self.pointer]
-            self.map[cmd](arg)
-            self.stack.append((cmd, arg))
+            increment = self.symbol[cmd](arg)
+            self.stack.append((self.pointer, cmd, arg))
+            self.pointer += increment
             if self.v:
-                print(f'cmd: {cmd}, arg: {arg}, pointer: {self.pointer}')
+                print(f'cmd: {cmd}, arg: {arg}, acc: {self.acc}, next: {self.pointer}')
             yield self.acc
     
 def parse(line, verbose=False):
