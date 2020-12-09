@@ -40,7 +40,6 @@ class Day7Tests(unittest.TestCase):
         self.assertEqual(5 + 6, countbags('vibrant plum', nodes, True))
         self.assertEqual(32, countbags('shiny gold', nodes, True))
 
-
     def test_findtuple(self):
         l = {('a', 1), ('b', 2)}
         self.assertTrue('a' in [c for c,_ in l])
@@ -100,8 +99,12 @@ def parse(line, verbose = False):
 
 def main():
     rules =  parsefile('../_data/day7.txt')
-    containers = walkup('shiny gold',nodesfrom(rules))
+    nodes = nodesfrom(rules)
+    containers = walkup('shiny gold',nodes)
     print(f'bags that can contain shiny gold: {len(containers)}')
+
+    count = countbags('shiny gold', nodes)
+    print(f'bags that shiny gold contains: {count}')
 
 if __name__ == '__main__':
     sys.exit(main())
