@@ -1,6 +1,8 @@
 import sys
 import unittest
 import re
+from collections import Counter
+from toposort import toposort, toposort_flatten
 
 class Day7Tests(unittest.TestCase):
     def test_parse(self):
@@ -11,52 +13,52 @@ class Day7Tests(unittest.TestCase):
         parsed = parse('faded blue bags contain no other bags.')
         self.assertEqual([['faded blue', None]], parsed)
 
-    def test_sample(self):
-        rules = parsefile('../_data/day7_sample.txt')      
-        self.assertEqual(len(rules), 15)
-        paths = find('shiny gold', rules, [])
-        paths = sorted(paths, key=len)#print(paths)
-        for p in paths:
-            print( p)
-        self.assertEqual(len(paths), 4)        
-
-    def test_simplecase(self):
-        rules =  parsefile('../_data/day7_simplecase.txt')
-        self.assertEqual(len(rules), 5)
-        paths = find('shiny gold', rules, [])
-        paths = sorted(paths, key=len)#print(paths)
-        for p in paths:
-            print( p)
-        self.assertEqual(len(paths), 2)
-
-
-def find(colour, rules, acc):
-    containers = [r for r in rules if r[-1] == colour]
-    if not containers:
-        print(f'base case: {colour}, acc:{acc}')
-        paths = []
-        for p in acc:
-            ext = [colour]
-            ext.extend(p)
-            paths.append(ext)       
-        return paths
+    def test_parsewithcounts(self):
+        parsed = parse('light red bags contain 1 bright white bag, 2 muted yellow bags.')
+        self.assertEqual([['light red', 'bright white'], ['light red', 'muted yellow']], parsed)
     
-    paths = []
-    #print(f'outer recursive case: acc {acc}, colour: {colour}, containers:{containers}, rules:{rules}')
-    for c in containers:
-        #print(f'inner recursive case: acc {acc}, colour: {colour}, container:{c}')
-        if not acc:
-            print(f'recursive case: not acc, colour: {colour}')
-            paths += find(c[0], [r for r in rules if not r[-1] == colour], [c])
+    def test_rulestonodes(self):
+        rules =  parsefile('../_data/day7.txt')
+        print(f'rule count:{len(rules)}')
+        nodes = nodesfrom(rules)
+        topo = list(toposort(nodes))
+
+    def test_graphwalk(self):
+        rules =  parsefile('../_data/day7_sample.txt')
+        nodes = nodesfrom(rules, True)
+        containers = walkup('light red', nodes)
+        self.assertFalse(containers)
+        containers = walkup('bright white', nodes)
+        self.assertEqual({'light red', 'dark orange'}, containers)
+        containers = walkup('shiny gold', nodes)
+        self.assertEqual({'light red', 'bright white', 'muted yellow', 'dark orange'}, containers)   
+
+    # def test_countbags(self):
+    #     rules =  parsefile('../_data/day7_sample.txt')
+    #     nodes = nodesfrom(rules, True)
+
+        
+def walkup(colour, nodes):
+    containers = [k for k,v in nodes.items() if colour in v]
+    if not containers:
+        return set()
+    
+    results = set()
+    for n in containers:
+        results = results | {n} | walkup(n, nodes) 
+    return results
+
+def nodesfrom(rules, verbose=False):
+    nodes = dict()
+    for r in rules:
+        if r[0] not in nodes:
+            nodes[r[0]] = {r[-1]}
         else:
-            print(f'recursive case: acc {acc}, colour: {colour}')
-            for p in acc:
-                ext = [colour]
-                ext.extend(p)
-                paths.append(p)
-            paths += find(c[0], [r for r in rules if not r[-1] == colour], paths)
-    print(f'recursion return: paths:{paths}')
-    return paths
+            nodes[r[0]].add(r[-1])
+    if verbose:
+        for n,v in nodes.items():
+            print(f'{n}: {v}')
+    return nodes
 
 def parsefile(file, verbose = False):
     with open(file, 'r', newline='', encoding='utf-8') as f:
@@ -75,8 +77,13 @@ def parse(line, verbose = False):
     colours = [[subject.strip(), c.strip()] for c in matches]
     if verbose:
         print(f'{line} -> {colours}')
-
     return colours
+
+def main():
+    rules =  parsefile('../_data/day7.txt')
+    containers = walkup('shiny gold',nodesfrom(rules))
+    #paths = sorted(paths, key=len)
+    print(f'bags that can contain shiny gold: {len(containers)}')
 
 if __name__ == '__main__':
     sys.exit(main())
