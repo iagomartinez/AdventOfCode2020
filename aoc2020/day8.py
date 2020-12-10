@@ -8,8 +8,7 @@ class AOCTests(unittest.TestCase):
         self.assertEqual(('acc', -99), parse('acc -99'))
 
     def test_parsefile(self):
-        commands = parseprogram('../_data/day8_sample.txt')
-        self.assertEqual(9, len(commands))
+        self.assertEqual(9, len(parseprogram('../_data/day8_sample.txt')))
     
     def test_sampleprogram(self):
         program = parseprogram('../_data/day8_sample.txt')
@@ -28,6 +27,28 @@ class AOCTests(unittest.TestCase):
         rt = BootCodeRunTime(program)
         acc = rt.execute()
         self.assertEqual(8, acc)
+
+    def test_tweakprogram(self):
+        program = parseprogram('../_data/day8.txt')
+        tweaks = [(ind, cmd, arg) for ind, (cmd, arg) in enumerate(program) if cmd in ['nop', 'jmp']]
+        print(f'found {len(tweaks)} potential tweaks')
+        flip = {'nop':'jmp', 'jmp':'nop'}
+        fixed = False
+
+        for ind,cmd,arg in tweaks:
+            flipped = flip[cmd]
+            tweaked = list(program)
+            tweaked[ind] = flipped, arg
+            rt = BootCodeRunTime(tweaked)
+            try:
+                acc = rt.execute()
+                fixed = True
+                print(f'tweaked: {ind}:{(cmd, arg)} fixed it! acc: {acc}')
+                break
+            except InfiniteLoopError as il:
+                pass
+                            
+        self.assertTrue(fixed)
 
     def test_commands(self):
         program = [parse('nop +0'), parse('acc +99'), parse('jmp +2'), parse('nop +0'), parse('acc -57')]
