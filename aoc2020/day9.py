@@ -9,16 +9,15 @@ class Day9Tests(unittest.TestCase):
 
     def test_findinvalidnumber(self):
         numbers = parse('../_data/day9_sample.txt')
-        valid = calculateset(0, 5, numbers)
-        invalid = set()
-        start = 0
-        for num in numbers[5:]:
-            if num not in valid:
-                invalid.add(num)
-                break
-            start +=1
-            valid = calculateset(start, 5, numbers)
-        self.assertEqual({127},invalid)
+        invalid = findinvalid(0, 5, numbers)
+        self.assertEqual(127,invalid)
+
+def findinvalid(start, preamble, numbers):
+    for num in numbers[preamble:]:
+        valid = calculateset(start, preamble, numbers)
+        if num not in valid:
+            return num
+        start +=1
 
 def calculateset(start, length, numbers):
     preamble = numbers[start:start + length]
@@ -30,7 +29,10 @@ def parse(file):
     return numbers
 
 def main():
-    print('Day 9')
+    print('---------- Day 9 ----------')
+    numbers = parse('../_data/day9.txt')
+    invalid = findinvalid(0, 25, numbers)
+    print(f'First invalid number: {invalid}')
 
 if __name__ == '__main__':
     sys.exit(main())
