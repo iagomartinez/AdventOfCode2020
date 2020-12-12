@@ -8,23 +8,54 @@ class Tests(unittest.TestCase):
         prettyprint(grid)
         self.assertEqual(10, len(grid))
 
-    def test_firstround(self):
+    def test_roundone(self):
         grid = parsegrid('../_data/day11_smallgrid.txt')
         newgrid = applyrules(grid)
+        print('---- after 1 round -----')
         prettyprint(newgrid)
+        print('-------------------------')
         self.assertEqual([True, None, True, True, None, True, True, None, True, True], newgrid[0])
         self.assertTrue(all([seat for row in newgrid for seat in row if seat is not None]))
 
-def applyrules(grid):
+    def test_roundtwo(self):
+        grid = parsegrid('../_data/day11_smallgrid.txt')
+        newgrid = applyrules(grid)
+        newgrid = applyrules(newgrid)
+        print('---- after 2 rounds -----')
+        prettyprint(newgrid)
+        print('-------------------------')
+
+        self.assertEqual([True, None, False, False, None, False, True, None, True, True], newgrid[0])
+        self.assertEqual([True, False, False, False, False, False, False, None, False, True], newgrid[1])
+
+#   free + occupied are trivial, just for readability
+def free(seat):
+    return seat == False
+
+def occupied(seat):
+    return seat == True
+
+def applyrules(grid, verbose=False):
     newgrid = list([list(row) for row in grid])
-    validrows = range(-len(grid), len(grid))
     for iy, seats in enumerate(grid):
-        validseats = range(-len(seats), len(seats))
         for ix, seat in enumerate(seats):
-            adjacents = [(ix - 1, iy), (ix - 1, iy -1), (ix, iy - 1), (ix + 1, iy -1), (ix + 1, iy), (ix + 1, iy + 1), (ix, iy + 1), (ix -1, iy + 1)]
-            if (seat is not None and not any([grid[y][x] for x, y in adjacents if x in validseats and y in validrows])):
-                newgrid[iy][ix] = True
+            if seat is not None:
+                adjacents = checkadjacent(iy, ix, grid)
+                if (free(seat) and not any(adjacents)):
+                    if verbose:
+                        print(f'Applied rule 1: ({iy}, {ix}) {seat}, adj: {adjacents}')
+                    newgrid[iy][ix] = True
+                elif (occupied(seat) and len([s for s in adjacents if occupied(s)]) >= 4):
+                    if verbose:
+                        print(f'Applied rule 2: ({iy}, {ix}) {seat}, adj: {adjacents}')
+                    newgrid[iy][ix] = False
     return newgrid
+
+def checkadjacent(iy, ix, grid):
+    validrows = range(0, len(grid))
+    validseats = range(0, len(grid[iy]))
+    adjacents = [(ix - 1, iy), (ix - 1, iy -1), (ix, iy - 1), (ix + 1, iy -1), (ix + 1, iy), (ix + 1, iy + 1), (ix, iy + 1), (ix -1, iy + 1)]
+    return [grid[y][x] for x, y in adjacents if x in validseats and y in validrows]
 
 def prettyprint(grid):
     charmap = {True:'#', False:'L'}
