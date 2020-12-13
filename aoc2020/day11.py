@@ -42,7 +42,7 @@ class Tests(unittest.TestCase):
     def test_seatsfree_whengridstabilises(self):
         grid = parsegrid('../_data/day11_smallgrid.txt')
         stablegrid = parsegrid('../_data/day11_stablegrid.txt')
-        finalgrid = repeatuntilstable(grid, verbose=True)
+        finalgrid = repeatuntilstable(grid)
         self.assertTrue(finalgrid, stablegrid)
         self.assertEqual(37, countoccupied(finalgrid))
 
@@ -53,6 +53,33 @@ class Tests(unittest.TestCase):
 
         self.assertFalse(equalgrids(grid, newgrid))
         self.assertTrue(equalgrids(grid, clone))
+
+    def test_scandiagonal(self):
+        grid = parsegrid('../_data/day11_los.txt')
+        seatpos = scandiagonal(grid, 4, 3,1,1)
+        self.assertEqual((5,4), seatpos)
+        seatpos = scandiagonal(grid, 4, 3,-1,1)
+        self.assertEqual((2,1), seatpos)
+        seatpos = scandiagonal(grid, 4, 3,1,-1)
+        self.assertEqual((7,0), seatpos)
+        seatpos = scandiagonal(grid, 4, 3,-1,-1)
+        self.assertEqual((0,7), seatpos)
+
+    def test_lineofsight(self):
+        grid = parsegrid('../_data/day11_los.txt')
+        seen = checklineofsight(4, 3, grid)
+        self.assertEqual({(4,2),(4,8),(1,3),(8,3),(5,4),(2,1),(7,0),(0,7)}, seen)
+
+    def test_flatvs2d(self):
+        grid = [[1,2,3],[4,5,6],[7,8,9]]
+        starty, startx = 1,1
+        flat = [item for row in grid for item in row]
+        flatindex = starty * len(grid) + startx
+        self.assertEqual(flat[flatindex], 5)
+        self.assertEqual(4, flatindex)
+        gridy = flatindex // len(grid)
+        gridx = flatindex % len(grid[gridy])
+        self.assertEqual((gridy, gridx), (1,1))
 
 def countoccupied(grid):
     return len([seat for row in grid for seat in row if occupied(seat)])
@@ -104,6 +131,51 @@ def applyrules(grid, verbose=False):
                     newgrid[iy][ix] = False
     return newgrid
 
+def scanrow(grid, startx, endx, row, step=1):
+    for x in range(startx, endx, step):
+        print(f'{row}, {x}, {grid[row][x]}')
+        if grid[row][x] is not None:
+            return (row, x)
+    return None
+
+def scancol(grid, starty, endy, col, step=1):
+    for y in range(starty, endy, step):
+        print(f'{y}, {col}, {grid[y][col]}')
+        if grid[y][col] is not None:
+            return (y, col)
+    return None
+
+def scandiagonal(grid, starty, startx, direction, modifier):
+    flatgrid = [item for row in grid for item in row]
+    flatindex = starty * len(grid) + startx
+    print(f'Scanning diagonal - start index: {flatindex}')
+    if direction == -1:
+        end = -1
+    else:
+        end = len(flatgrid)+1
+    step = direction * (len(grid[starty])+modifier)
+    for index in range(flatindex+step, end, step):    
+        gridy = index // len(grid)
+        gridx = index % len(grid[gridy])
+        print(f'Scanning index: {index} = ({gridy},{gridx})=>{flatgrid[index]}')
+        if flatgrid[index] is not None:
+            return (gridy, gridx)
+    return None
+
+def checklineofsight(row, col, grid):
+    seen = set()
+
+    seen.add(scanrow(grid,col-1,-1,row,step=-1))
+    seen.add(scanrow(grid,col+1,len(grid[row])+1,row))
+    seen.add(scancol(grid,row-1,-1,col,step=-1))
+    seen.add(scancol(grid,row+1,len(grid)+1,col))
+    seen.add(scandiagonal(grid,row,col,1,1))
+    seen.add(scandiagonal(grid,row,col,-1,1))
+    seen.add(scandiagonal(grid,row,col,1,-1))
+    seen.add(scandiagonal(grid,row,col,-1,-1))
+    
+    return {pos for pos in seen if pos is not None}
+
 def checkadjacent(iy, ix, grid):
     validrows = range(0, len(grid))
     validseats = range(0, len(grid[iy]))
@@ -120,12 +192,13 @@ def prettyprint(grid):
 
 def parsegrid(file):
     grid = []
-    with open(file, 'r', newline='', encoding='utf-8') as f:        
+    charmap = {'#':True, 'L':False}
+    with open(file, 'r', newline='', encoding='utf-8') as f:
         for line in f:
-            row = [False if c == 'L' else None for c in line.strip()]
+            row = [None if c == '.' else charmap[c] for c in line.strip()]
             grid.append(row)
     return grid
-    
+
 def main():
     print('---------- Day 11 ----------')
     startgrid = parsegrid('../_data/day11.txt')
