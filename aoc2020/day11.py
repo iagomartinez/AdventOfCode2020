@@ -1,5 +1,6 @@
 import sys
 import unittest
+import time
 unittest.TestLoader.sortTestMethodsUsing = None
 
 class Tests(unittest.TestCase):
@@ -9,77 +10,36 @@ class Tests(unittest.TestCase):
         prettyprint(grid)
         self.assertEqual(10, len(grid))
 
-    def test_roundone(self):
-        grid = parsegrid('../_data/day11_smallgrid.txt')
-        newgrid = applyrules(grid)
-        print('---- after 1 round -----')
-        prettyprint(newgrid)
-        print('-------------------------')
-        self.assertEqual([True, None, True, True, None, True, True, None, True, True], newgrid[0])
-        self.assertTrue(all([seat for row in newgrid for seat in row if seat is not None]))
-
-    def test_roundtwo(self):
-        grid = parsegrid('../_data/day11_smallgrid.txt')
-        newgrid = applyrules(grid)
-        newgrid = applyrules(newgrid)
-        print('---- after 2 rounds -----')
-        prettyprint(newgrid)
-        print('-------------------------')
-
-        self.assertEqual([True, None, False, False, None, False, True, None, True, True], newgrid[0])
-        self.assertEqual([True, False, False, False, False, False, False, None, False, True], newgrid[1])
-
-    def test_gridchanges_afterroundthree(self):
-        grid = parsegrid('../_data/day11_smallgrid.txt')
-        newgrid = applyrules(grid)
-        newgrid2 = applyrules(newgrid)
-        newgrid3 = applyrules(newgrid2)
-        print('---- after 3 rounds -----')
-        prettyprint(newgrid3)
-        print('-------------------------')
-        self.assertNotEqual(newgrid2, newgrid3)
-
     def test_seatsfree_whengridstabilises(self):
         grid = parsegrid('../_data/day11_smallgrid.txt')
         stablegrid = parsegrid('../_data/day11_stablegrid.txt')
-        finalgrid = repeatuntilstable(grid)
+        finalgrid = repeatuntilstable(grid, verbose=True)
         self.assertTrue(finalgrid, stablegrid)
-        self.assertEqual(37, countoccupied(finalgrid))
+        self.assertEqual(26, countoccupied(finalgrid))
 
     def test_comparegrids(self):
         grid = parsegrid('../_data/day11_smallgrid.txt')
-        newgrid = applyrules(grid)
+        newgrid = applyrules(grid, True)
         clone = list([list(row) for row in grid])
-
         self.assertFalse(equalgrids(grid, newgrid))
         self.assertTrue(equalgrids(grid, clone))
 
     def test_scandiagonal(self):
         grid = parsegrid('../_data/day11_los.txt')
-        seatpos = scandiagonal(grid, 4, 3,1,1)
+        seatpos = scandiagonal(grid, 4,3,1,1)
         self.assertEqual((5,4), seatpos)
-        seatpos = scandiagonal(grid, 4, 3,-1,1)
-        self.assertEqual((2,1), seatpos)
-        seatpos = scandiagonal(grid, 4, 3,1,-1)
+        seatpos = scandiagonal(grid, 4,3,-1,1)
+        self.assertEqual((0,7), seatpos)
+        seatpos = scandiagonal(grid, 4,3,1,-1)
         self.assertEqual((7,0), seatpos)
         seatpos = scandiagonal(grid, 4, 3,-1,-1)
-        self.assertEqual((0,7), seatpos)
+        self.assertEqual((2,1), seatpos)
 
-    def test_lineofsight(self):
-        grid = parsegrid('../_data/day11_los.txt')
-        seen = checklineofsight(4, 3, grid)
-        self.assertEqual({(4,2),(4,8),(1,3),(8,3),(5,4),(2,1),(7,0),(0,7)}, seen)
-
-    def test_flatvs2d(self):
-        grid = [[1,2,3],[4,5,6],[7,8,9]]
-        starty, startx = 1,1
-        flat = [item for row in grid for item in row]
-        flatindex = starty * len(grid) + startx
-        self.assertEqual(flat[flatindex], 5)
-        self.assertEqual(4, flatindex)
-        gridy = flatindex // len(grid)
-        gridx = flatindex % len(grid[gridy])
-        self.assertEqual((gridy, gridx), (1,1))
+    def test_lineofsight_onsmallgrid(self):
+        grid = parsegrid('../_data/day11_smallgrid.txt')
+        seen = checklineofsight(0, 9, grid, True)
+        print(seen)
+        self.assertEqual(3, len(seen))        
 
 def countoccupied(grid):
     return len([seat for row in grid for seat in row if occupied(seat)])
@@ -120,60 +80,52 @@ def applyrules(grid, verbose=False):
     for iy, seats in enumerate(grid):
         for ix, seat in enumerate(seats):
             if seat is not None:
-                adjacents = checkadjacent(iy, ix, grid)
-                if (free(seat) and not any(adjacents)):
+                visibleseats = [grid[y][x] for y,x in checklineofsight(iy, ix, grid)]
+                if verbose:
+                    print(f'Scanning, {iy},{ix}, visible: {visibleseats}')
+                if (free(seat) and not any([occupied(seat) for seat in visibleseats])):
                     if verbose:
-                        print(f'Applied rule 1: ({iy}, {ix}) {seat}, adj: {adjacents}')
+                        print(f'Applied rule 1: ({iy}, {ix}) {seat}, adj: {visibleseats}')
                     newgrid[iy][ix] = True
-                elif (occupied(seat) and len([s for s in adjacents if occupied(s)]) >= 4):
+                elif (occupied(seat) and len([s for s in visibleseats if occupied(s)]) >= 5):
                     if verbose:
-                        print(f'Applied rule 2: ({iy}, {ix}) {seat}, adj: {adjacents}')
+                        print(f'Applied rule 2: ({iy}, {ix}) {seat}, adj: {visibleseats}')
                     newgrid[iy][ix] = False
     return newgrid
 
 def scanrow(grid, startx, endx, row, step=1):
-    for x in range(startx, endx, step):
-        print(f'{row}, {x}, {grid[row][x]}')
-        if grid[row][x] is not None:
-            return (row, x)
+    if startx in range(0, len(grid[row])):
+        for x in range(startx, endx, step):
+            if grid[row][x] is not None:
+                return (row, x)
     return None
 
 def scancol(grid, starty, endy, col, step=1):
-    for y in range(starty, endy, step):
-        print(f'{y}, {col}, {grid[y][col]}')
-        if grid[y][col] is not None:
-            return (y, col)
+    if starty in range(0, len(grid)):
+        for y in range(starty, endy, step):
+            if grid[y][col] is not None:
+                return (y, col)
     return None
 
-def scandiagonal(grid, starty, startx, direction, modifier):
-    flatgrid = [item for row in grid for item in row]
-    flatindex = starty * len(grid) + startx
-    print(f'Scanning diagonal - start index: {flatindex}')
-    if direction == -1:
-        end = -1
-    else:
-        end = len(flatgrid)+1
-    step = direction * (len(grid[starty])+modifier)
-    for index in range(flatindex+step, end, step):    
-        gridy = index // len(grid)
-        gridx = index % len(grid[gridy])
-        print(f'Scanning index: {index} = ({gridy},{gridx})=>{flatgrid[index]}')
-        if flatgrid[index] is not None:
-            return (gridy, gridx)
+def scandiagonal(grid, starty, startx, ystep, xstep, verbose=False):
+    ypos, xpos = starty + ystep, startx + xstep
+    while xpos in range(0, len(grid[starty]))  and ypos in range(0, len(grid)):
+        if grid[ypos][xpos] is not None:
+            return (ypos, xpos)
+        ypos += ystep
+        xpos += xstep
     return None
 
-def checklineofsight(row, col, grid):
+def checklineofsight(row, col, grid, verbose=False):
     seen = set()
-
     seen.add(scanrow(grid,col-1,-1,row,step=-1))
-    seen.add(scanrow(grid,col+1,len(grid[row])+1,row))
+    seen.add(scanrow(grid,col+1,len(grid[row]),row))
     seen.add(scancol(grid,row-1,-1,col,step=-1))
-    seen.add(scancol(grid,row+1,len(grid)+1,col))
-    seen.add(scandiagonal(grid,row,col,1,1))
-    seen.add(scandiagonal(grid,row,col,-1,1))
-    seen.add(scandiagonal(grid,row,col,1,-1))
-    seen.add(scandiagonal(grid,row,col,-1,-1))
-    
+    seen.add(scancol(grid,row+1,len(grid),col))
+    seen.add(scandiagonal(grid,row,col,1,1, verbose))
+    seen.add(scandiagonal(grid,row,col,-1,1, verbose))
+    seen.add(scandiagonal(grid,row,col,1,-1, verbose))
+    seen.add(scandiagonal(grid,row,col,-1,-1, verbose))
     return {pos for pos in seen if pos is not None}
 
 def checkadjacent(iy, ix, grid):
@@ -202,8 +154,10 @@ def parsegrid(file):
 def main():
     print('---------- Day 11 ----------')
     startgrid = parsegrid('../_data/day11.txt')
-    stablegrid = repeatuntilstable(startgrid, verbose=True)
-    print(f'Stable grid found, occupied seats: {countoccupied(stablegrid)}')
+    t0 = time.perf_counter()
+    stablegrid = repeatuntilstable(startgrid)
+    t1 = time.perf_counter()
+    print(f'Stable grid found, occupied seats: {countoccupied(stablegrid)} in {t1 - t0:0.4f} seconds')
 
 if __name__ == '__main__':
     sys.exit(main())
