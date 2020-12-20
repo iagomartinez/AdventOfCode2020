@@ -1,6 +1,29 @@
 import sys
 import unittest
+import time
 from datetime import datetime
+
+class Tests(unittest.TestCase):
+    def test_part2(self):
+        _, busids = parse('../_data/day13_sample.txt')
+        buses = [(ix, int(bus)) for ix, bus in enumerate(busids) if bus != 'x']
+        offset,maxid = max(buses, key=second)
+        acc = 1        
+        timestamp = buses[0][1]
+        t0 = time.perf_counter()
+        while True:
+            tmp = [((timestamp + b[0]) % b[1] == 0) for b in buses]
+            if all(tmp):
+                print(f'candidate timestamp found: {timestamp}')
+                break
+            timestamp += buses[0][1]
+            t1 = time.perf_counter()
+
+        print(f'timestamp {timestamp} found in {t1 - t0:0.4f} seconds')
+        self.assertEqual(1068781, timestamp)
+
+def second(tup):
+    return tup[1]
 
 def extractwholeminutes(tup):
     _, minutes = tup
